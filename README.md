@@ -1,2 +1,2 @@
 # RootRM
-Root level remote management software
+Root level remote management library and command line utility.
