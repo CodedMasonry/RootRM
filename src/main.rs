@@ -10,11 +10,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         print!("> ");
         stdout().flush()?;
 
-        let mut input = String::new();
+        let mut input: String = String::new();
         stdin().read_line(&mut input)?;
 
         let mut commands = input.trim().split(" | ").peekable();
-        let mut previous_command = None;
+        let mut previous_command: Option<Child> = None;
 
         while let Some(command) = commands.next() {
             let mut parts = command.trim().split_whitespace();
