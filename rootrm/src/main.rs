@@ -3,6 +3,7 @@ use std::{
     io::{stdin, stdout, Write},
     path::Path,
     process::Command,
+    str::SplitWhitespace,
 };
 
 use anyhow::Result;
@@ -16,7 +17,7 @@ struct Args {
 }
 
 fn main() -> Result<()> {
-    let env_stff: Args = Args::parse();
+    let _env_args: Args = Args::parse();
 
     loop {
         print!("RootRM > ");
@@ -40,19 +41,27 @@ fn main() -> Result<()> {
 
             "exit" => return Ok(()),
 
-            command => match rootrm::run_command(command) {
+            command => match rootrm::run_command(command, args.clone()) {
                 Ok(_) => continue,
-                Err(_) => {
-                    let child = Command::new(command).args(args).spawn();
-
-                    match child {
-                        Ok(mut child) => {
-                            child.wait()?;
-                        }
-                        Err(e) => eprintln!("{}", e),
-                    };
+                Err(e) => {
+                    if e.is::<rootrm::ModuleError>() {
+                        run_external_command(command, args);
+                    } else {
+                        eprintln!("Error running command: {:#?}", e);
+                    }
                 }
             },
         }
     }
+}
+
+fn run_external_command(command: &str, args: SplitWhitespace) {
+    let child = Command::new(command).args(args).spawn();
+
+    match child {
+        Ok(mut child) => {
+            child.wait().unwrap();
+        }
+        Err(e) => eprintln!("{}", e),
+    };
 }
