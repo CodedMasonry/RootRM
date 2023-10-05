@@ -14,6 +14,11 @@ pub enum ModuleError {
 pub fn run_command(command: &str, args: SplitWhitespace) -> Result<()> {
     match command {
         "load" => commands::misc::some_loading(args),
+        "help" => help_cmd(args),
         _ => Err(ModuleError::Invalid.into()),
     }
+}
+
+pub fn help_cmd(args: SplitWhitespace) -> Result<()> {
+        Ok(())
 }
