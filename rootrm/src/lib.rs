@@ -1,7 +1,10 @@
-pub mod commands;
+pub mod modules;
 
-use std::str::SplitWhitespace;
+use lazy_static::lazy_static;
+use parking_lot::Mutex;
+use std::{str::SplitWhitespace, sync::Arc};
 
+use crate::modules as modules_folder;
 use anyhow::Result;
 use thiserror::Error;
 
@@ -11,14 +14,25 @@ pub enum ModuleError {
     Invalid,
 }
 
-pub fn run_command(command: &str, args: SplitWhitespace) -> Result<()> {
-    match command {
-        "load" => commands::misc::some_loading(args),
-        "help" => help_cmd(args),
-        _ => Err(ModuleError::Invalid.into()),
-    }
+pub trait Command {
+    fn run(&self, args: SplitWhitespace) -> Result<()>;
+    fn help(&self);
+    fn name(&self) -> String;
 }
 
-pub fn help_cmd(args: SplitWhitespace) -> Result<()> {
-        Ok(())
+lazy_static! {
+    static ref COMMANDS_SET: Arc<Mutex<Vec<Box<dyn Command + Send + Sync>>>> =
+        Arc::new(Mutex::new(vec![Box::new(modules_folder::misc::TestCmd()),]));
+}
+
+pub fn run_command(command: &str, args: SplitWhitespace) -> Result<()> {
+    let cmd_guard = COMMANDS_SET.lock();
+    if let Some(cmd) = cmd_guard.iter().find(|&cmd| cmd.name() == command) {
+        println!("FOUND");
+
+        return cmd.run(args);
+    }
+
+    // Hits if no commands are it
+    return Err(ModuleError::Invalid.into());
 }
