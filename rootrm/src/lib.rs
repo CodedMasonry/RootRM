@@ -5,7 +5,7 @@ use parking_lot::Mutex;
 use std::{str::SplitWhitespace, sync::Arc};
 
 use crate::modules as modules_folder;
-use anyhow::Result;
+use std::error::Error;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -15,20 +15,23 @@ pub enum ModuleError {
 }
 
 pub trait Command {
-    fn run(&self, args: SplitWhitespace) -> Result<()>;
+    fn run(&self, args: SplitWhitespace) -> Result<(), Box<dyn Error>>;
     fn help(&self);
     fn name(&self) -> String;
 }
 
+// Static items that are can be compiled
 lazy_static! {
     static ref COMMANDS_SET: Arc<Mutex<Vec<Box<dyn Command + Send + Sync>>>> =
-        Arc::new(Mutex::new(vec![Box::new(modules_folder::misc::TestCmd()),]));
+        Arc::new(Mutex::new(vec![
+            Box::new(modules_folder::misc::TestCmd),
+            Box::new(modules_folder::gui::GuiCmd)
+        ]));
 }
 
-pub fn run_command(command: &str, args: SplitWhitespace) -> Result<()> {
+pub fn run_command(command: &str, args: SplitWhitespace) -> Result<(), Box<dyn Error>> {
     let cmd_guard = COMMANDS_SET.lock();
     if let Some(cmd) = cmd_guard.iter().find(|&cmd| cmd.name() == command) {
-        println!("FOUND");
 
         return cmd.run(args);
     }

@@ -1,12 +1,10 @@
 use std::{str::SplitWhitespace, thread, time::Duration};
-
-use anyhow::{Ok, Result};
 use indicatif::ProgressIterator;
 
-pub struct TestCmd();
+pub struct TestCmd;
 
 impl crate::Command for TestCmd {
-    fn run(&self, mut args: SplitWhitespace) -> Result<()> {
+    fn run(&self, mut args: SplitWhitespace) -> Result<(), Box<(dyn std::error::Error)>> {
         let total: u32 = args.next().get_or_insert("100").parse()?;
         let mut result = 1;
 
@@ -18,7 +16,6 @@ impl crate::Command for TestCmd {
         }
 
         println!("{}", result);
-
         Ok(())
     }
 
