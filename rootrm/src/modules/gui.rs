@@ -1,6 +1,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
 
 use eframe::egui;
+use crate::Command;
 
 struct Gui {
     name: String,
@@ -8,6 +9,12 @@ struct Gui {
 }
 
 pub struct GuiCmd;
+
+pub fn add_commands() -> Vec<Box<dyn Command + Send + Sync>> {
+    vec![
+        Box::new(GuiCmd),
+    ]
+}
 
 impl crate::Command for GuiCmd {
     fn run(&self, _args: std::str::SplitWhitespace) -> Result<(), Box<dyn std::error::Error>> {

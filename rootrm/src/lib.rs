@@ -22,17 +22,24 @@ pub trait Command {
 
 // Static items that are can be compiled
 lazy_static! {
-    static ref COMMANDS_SET: Arc<Mutex<Vec<Box<dyn Command + Send + Sync>>>> =
-        Arc::new(Mutex::new(vec![
-            Box::new(modules_folder::misc::TestCmd),
-            Box::new(modules_folder::gui::GuiCmd)
-        ]));
-}
+    static ref COMMANDS_SET: Arc<Mutex<Vec<Box<dyn Command + Send + Sync>>>> = {
 
+        // Default commands
+        let mut temp_set: Vec<Box<dyn Command + Send + Sync>> = vec![
+            Box::new(modules_folder::misc::TestCmd),
+        ];
+
+        // If user wants GUI features, add it
+        #[cfg(feature = "gui")]
+        temp_set.append(&mut modules_folder::gui::add_commands());
+
+
+        Arc::new(Mutex::new(temp_set))
+    };
+}
 pub fn run_command(command: &str, args: SplitWhitespace) -> Result<(), Box<dyn Error>> {
     let cmd_guard = COMMANDS_SET.lock();
     if let Some(cmd) = cmd_guard.iter().find(|&cmd| cmd.name() == command) {
-
         return cmd.run(args);
     }
 
