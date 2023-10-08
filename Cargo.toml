@@ -1,6 +1,7 @@
 [workspace]
 members = [
     "rootrm",
+    "payloads\\reverse_shell",
 ]
 default-members = [
     "rootrm",
