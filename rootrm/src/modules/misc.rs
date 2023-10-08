@@ -3,6 +3,7 @@ use indicatif::ProgressIterator;
 
 pub struct TestCmd;
 
+/// Debug CLI
 impl crate::Command for TestCmd {
     fn run(&self, mut args: SplitWhitespace) -> Result<(), Box<(dyn std::error::Error)>> {
         let total: u32 = args.next().get_or_insert("100").parse()?;
