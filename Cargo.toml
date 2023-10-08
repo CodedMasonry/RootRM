@@ -1,7 +1,6 @@
 [workspace]
 members = [
     "rootrm",
-    "win_kernel",
 ]
 default-members = [
     "rootrm",
