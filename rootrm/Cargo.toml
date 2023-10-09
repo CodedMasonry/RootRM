@@ -18,4 +18,4 @@ thiserror = "1.0.48"
 
 [features]
 default = []
-gui = ["dep:eframe","dep:egui"]
+gui = ["dep:eframe", "dep:egui"]
