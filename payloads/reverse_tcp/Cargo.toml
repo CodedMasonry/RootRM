@@ -1,0 +1,18 @@
+[package]
+name = "reverse_shell"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+tokio = { version = "1.32.0", features = ["net", "rt-multi-thread", "process", "macros"] }
+
+[target.'cfg(windows)'.dependencies]
+tokio = { version = "1.32.0", features = ["net", "rt-multi-thread", "process", "macros", "io-std"] }
+
+[profile.release]
+strip = true
+opt-level = "z"
+lto = true
+panic = "abort"

