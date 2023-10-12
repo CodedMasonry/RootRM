@@ -2,6 +2,8 @@
 members = [
     "rootrm",
     "payloads/reverse_tcp",
+    "payloads/reverse_quic",
+    
 ]
 default-members = [
     "rootrm",
