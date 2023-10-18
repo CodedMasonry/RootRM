@@ -1,49 +1,66 @@
 use std::{
     env,
-    io::{stdin, stdout, Write},
     path::Path,
     process::Command,
     str::SplitWhitespace,
 };
 
+use rustyline::{error::ReadlineError, DefaultEditor};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-
+    let mut rl = DefaultEditor::new()?;
+    #[cfg(feature = "with-file-history")]
+    if rl.load_history("history.txt").is_err() {
+        println!("No previous history.");
+    }
     loop {
-        print!("RootRM > ");
-        stdout().flush()?;
+        let readline = rl.readline("RootRM > ");
+        match readline {
+            Ok(input) => {
+                rl.add_history_entry(input.as_str())?;
+                let mut parts = input.trim().split_whitespace();
+                let command = parts.next().unwrap();
+                let args = parts;
 
-        let mut input = String::new();
-        stdin().read_line(&mut input).unwrap();
+                match command {
+                    "cd" => {
+                        let new_dir = args.peekable().peek().map_or("/", |x| *x);
+                        let root = Path::new(new_dir);
+                        if let Err(e) = env::set_current_dir(&root) {
+                            eprintln!("{}", e);
+                        }
+                    }
 
-        let mut parts = input.trim().split_whitespace();
-        let command = parts.next().unwrap();
-        let args = parts;
+                    "exit" => return Ok(()),
 
-        match command {
-            "cd" => {
-                let new_dir = args.peekable().peek().map_or("/", |x| *x);
-                let root = Path::new(new_dir);
-                if let Err(e) = env::set_current_dir(&root) {
-                    eprintln!("{}", e);
+                    command => match rootrm::run_command(command, args.clone()) {
+                        Ok(_) => continue,
+                        Err(e) => {
+                            if e.is::<rootrm::ModuleError>() {
+                                run_external_command(command, args);
+                            } else {
+                                eprintln!("Error running command: {:#?}", e);
+                            }
+                        }
+                    },
                 }
             }
-
-            "exit" => return Ok(()),
-
-            command => match rootrm::run_command(command, args.clone()) {
-                Ok(_) => continue,
-                Err(e) => {
-                    if e.is::<rootrm::ModuleError>() {
-                        run_external_command(command, args);
-                    } else {
-                        eprintln!("Error running command: {:#?}", e);
-                    }
-                }
-            },
+            Err(ReadlineError::Interrupted) => {
+                break;
+            }
+            Err(ReadlineError::Eof) => {
+                break;
+            }
+            Err(err) => {
+                println!("Error: {:?}", err);
+                break;
+            }
         }
     }
+    #[cfg(feature = "with-file-history")]
+    rl.save_history("history.txt");
+    Ok(())
 }
 
 fn run_external_command(command: &str, args: SplitWhitespace) {
