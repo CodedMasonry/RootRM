@@ -3,7 +3,7 @@ pub mod modules;
 
 use lazy_static::lazy_static;
 use parking_lot::Mutex;
-use std::{str::SplitWhitespace, sync::Arc};
+use std::{str::SplitWhitespace, sync::Arc, collections::HashMap};
 
 use crate::modules as modules_folder;
 use std::error::Error;
@@ -23,22 +23,23 @@ pub trait Command {
     fn run(&self, args: SplitWhitespace) -> Result<(), Box<dyn Error>>;
     fn help(&self);
     fn name(&self) -> String;
-
 }
 
 // Static items that are can be compiled
 lazy_static! {
     /// List of commands supported
     static ref COMMANDS_SET: Arc<Mutex<Vec<Box<dyn Command + Send + Sync>>>> = {
-
-        // Default commands
-        let mut temp_set: Vec<Box<dyn Command + Send + Sync>> = vec![
-            Box::new(modules_folder::misc::TestCmd),
-        ];
+        let mut temp_set: Vec<Box<dyn Command + Send + Sync>> = vec![];
 
         // If user wants GUI features
         #[cfg(feature = "gui")]
         temp_set.append(&mut modules_folder::gui::add_commands());
+        // debug stuff
+        #[cfg(feature = "debug")]
+        temp_set.append(&mut modules_folder::misc::add_commands());
+        // network handlers
+        temp_set.append(&mut modules_folder::handlers::add_commands());
+
 
 
         Arc::new(Mutex::new(temp_set))
@@ -54,4 +55,27 @@ pub fn run_command(command: &str, args: SplitWhitespace) -> Result<(), Box<dyn E
 
     // Hits if no commands are it
     return Err(ModuleError::Invalid.into());
+}
+
+fn parse_flags(input: SplitWhitespace) -> HashMap<String, String> {
+    let mut flags_with_args = HashMap::new();
+    let mut current_flag = String::new();
+
+    for word in input {
+        if word.starts_with('-') {
+            if !current_flag.is_empty() {
+                flags_with_args.insert(current_flag.clone(), String::new());
+            }
+            current_flag = word.trim_start_matches('-').to_owned();
+        } else if !current_flag.is_empty() {
+            flags_with_args.insert(current_flag.clone(), word.to_owned());
+            current_flag.clear();
+        }
+    }
+
+    if !current_flag.is_empty() {
+        flags_with_args.insert(current_flag.clone(), String::new());
+    }
+
+    flags_with_args
 }

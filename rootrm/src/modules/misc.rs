@@ -1,7 +1,18 @@
+#![cfg(feature = "debug")]
+
 use std::{str::SplitWhitespace, thread, time::Duration};
 use indicatif::ProgressIterator;
+use crate::Command;
 
 pub struct TestCmd;
+pub struct TestArgs;
+
+pub fn add_commands() -> Vec<Box<dyn Command + Send + Sync>> {
+    vec![
+        Box::new(TestCmd),
+        Box::new(TestArgs),
+    ]
+}
 
 /// Debug CLI
 impl crate::Command for TestCmd {
@@ -26,5 +37,20 @@ impl crate::Command for TestCmd {
 
     fn name(&self) -> String {
         "load".to_string()
+    }
+}
+
+impl crate::Command for TestArgs {
+    fn run(&self, args: SplitWhitespace) -> Result<(), Box<(dyn std::error::Error)>> {
+        println!("{:#?}", crate::parse_flags(args));
+        Ok(())
+    }
+
+    fn help(&self) {
+        todo!()
+    }
+
+    fn name(&self) -> String {
+        "test_args".to_string()
     }
 }

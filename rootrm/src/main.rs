@@ -6,18 +6,9 @@ use std::{
     str::SplitWhitespace,
 };
 
-use anyhow::Result;
-use clap::Parser;
 
-#[derive(Parser, Debug)]
-#[command(author, version, about, long_about = None)]
-struct Args {
-    #[arg(long, help = "Removes interactive elements")]
-    no_interact: bool,
-}
-
-fn main() -> Result<()> {
-    let _env_args: Args = Args::parse();
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     loop {
         print!("RootRM > ");
