@@ -3,12 +3,13 @@ pub mod modules;
 
 use lazy_static::lazy_static;
 use parking_lot::Mutex;
-use std::{str::SplitWhitespace, sync::Arc, collections::HashMap};
+use std::{collections::HashMap, str::SplitWhitespace, sync::Arc};
 
 use crate::modules as modules_folder;
 use std::error::Error;
 use thiserror::Error;
 
+/// Basic error handling for root module handling
 #[derive(Error, Debug)]
 pub enum ModuleError {
     #[error("Doesn't Exist")]
@@ -57,9 +58,13 @@ pub fn run_command(command: &str, args: SplitWhitespace) -> Result<(), Box<dyn E
     return Err(ModuleError::Invalid.into());
 }
 
+
+/// Handles parsing flags in a SplitWhitespace item
 fn parse_flags(input: SplitWhitespace) -> HashMap<String, String> {
     let mut flags_with_args = HashMap::new();
     let mut current_flag = String::new();
+    let mut is_long_string = false;
+    let mut long_string = Vec::new(); // In case someone has a long input ("my home/repos")
 
     for word in input {
         if word.starts_with('-') {
@@ -68,8 +73,23 @@ fn parse_flags(input: SplitWhitespace) -> HashMap<String, String> {
             }
             current_flag = word.trim_start_matches('-').to_owned();
         } else if !current_flag.is_empty() {
-            flags_with_args.insert(current_flag.clone(), word.to_owned());
-            current_flag.clear();
+            if word.starts_with("\"") {
+                long_string.push(word.trim_start_matches('\"'));
+                is_long_string = true
+            } else if word.ends_with("\"") {
+                long_string.push(word.trim_end_matches('\"'));
+
+                flags_with_args.insert(current_flag.clone(), long_string.join(" "));
+                long_string.clear();
+                current_flag.clear();
+
+                is_long_string = false;
+            } else if is_long_string == true {
+                long_string.push(word);
+            } else {
+                flags_with_args.insert(current_flag.clone(), word.to_owned());
+                current_flag.clear();
+            }
         }
     }
 

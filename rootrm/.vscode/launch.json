@@ -1,0 +1,138 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in library 'rootrm'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--lib",
+                    "--package=rootrm"
+                ],
+                "filter": {
+                    "name": "rootrm",
+                    "kind": "lib"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug executable 'rootrm'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=rootrm",
+                    "--package=rootrm"
+                ],
+                "filter": {
+                    "name": "rootrm",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in executable 'rootrm'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bin=rootrm",
+                    "--package=rootrm"
+                ],
+                "filter": {
+                    "name": "rootrm",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug executable 'reverse_shell'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=reverse_shell",
+                    "--package=reverse_shell"
+                ],
+                "filter": {
+                    "name": "reverse_shell",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in executable 'reverse_shell'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bin=reverse_shell",
+                    "--package=reverse_shell"
+                ],
+                "filter": {
+                    "name": "reverse_shell",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug executable 'reverse_quic'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=reverse_quic",
+                    "--package=reverse_quic"
+                ],
+                "filter": {
+                    "name": "reverse_quic",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in executable 'reverse_quic'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bin=reverse_quic",
+                    "--package=reverse_quic"
+                ],
+                "filter": {
+                    "name": "reverse_quic",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        }
+    ]
+}
