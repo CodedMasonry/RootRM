@@ -17,6 +17,7 @@ pub fn add_commands() -> Vec<Box<dyn Command + Send + Sync>> {
     ]
 }
 
+#[async_trait]
 impl crate::Command for GuiCmd {
     fn run(&self, _args: std::str::SplitWhitespace) -> Result<(), Box<dyn std::error::Error>> {
         let options = eframe::NativeOptions {

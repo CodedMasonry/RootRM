@@ -1,6 +1,7 @@
 #![cfg(feature = "debug")]
 
 use std::{str::SplitWhitespace, thread, time::Duration};
+use async_trait::async_trait;
 use indicatif::ProgressIterator;
 use crate::Command;
 
@@ -15,8 +16,9 @@ pub fn add_commands() -> Vec<Box<dyn Command + Send + Sync>> {
 }
 
 /// Debug CLI
+#[async_trait]
 impl crate::Command for TestCmd {
-    fn run(&self, mut args: SplitWhitespace) -> Result<(), Box<(dyn std::error::Error)>> {
+    async fn run(&self, mut args: SplitWhitespace<'_>) -> Result<(), Box<(dyn std::error::Error)>> {
         let total: u32 = args.next().get_or_insert("100").parse()?;
         let mut result = 1;
 
@@ -40,9 +42,10 @@ impl crate::Command for TestCmd {
     }
 }
 
+#[async_trait]
 impl crate::Command for TestArgs {
-    fn run(&self, args: SplitWhitespace) -> Result<(), Box<(dyn std::error::Error)>> {
-        println!("{:#?}", crate::parse_flags(args));
+    async fn run(&self, args: SplitWhitespace<'_>) -> Result<(), Box<(dyn std::error::Error)>> {
+        println!("{:#?}", crate::parse_flags(args).await);
         Ok(())
     }
 

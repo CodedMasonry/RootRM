@@ -3,6 +3,7 @@ pub mod modules;
 
 use lazy_static::lazy_static;
 use parking_lot::Mutex;
+use async_trait::async_trait;
 use std::{collections::HashMap, str::SplitWhitespace, sync::Arc};
 
 use crate::modules as modules_folder;
@@ -20,8 +21,9 @@ pub enum ModuleError {
 /// Sub commands are EXPECTED to be handled by the run fn
 /// help fn expects module to print it's own help message (default help message functions will be provided soon)
 /// name fn is simply for indexing purposes (should return name of command)
-pub trait Command {
-    fn run(&self, args: SplitWhitespace) -> Result<(), Box<dyn Error>>;
+#[async_trait]
+pub trait Command: Send + Sync {
+    async fn run(&self, args: SplitWhitespace<'_>) -> Result<(), Box<dyn Error>>;
     fn help(&self);
     fn name(&self) -> String;
 }
@@ -48,19 +50,18 @@ lazy_static! {
 }
 
 /// Intended for CLI
-pub fn run_command(command: &str, args: SplitWhitespace) -> Result<(), Box<dyn Error>> {
+pub async fn run_command(command: &str, args: SplitWhitespace<'_>) -> Result<(), Box<dyn Error>> {
     let cmd_guard = COMMANDS_SET.lock();
     if let Some(cmd) = cmd_guard.iter().find(|&cmd| cmd.name() == command) {
-        return cmd.run(args);
+        return cmd.run(args).await;
     }
 
     // Hits if no commands are it
     return Err(ModuleError::Invalid.into());
 }
 
-
 /// Handles parsing flags in a SplitWhitespace item
-fn parse_flags(input: SplitWhitespace) -> HashMap<String, String> {
+async fn parse_flags(input: SplitWhitespace<'_>) -> HashMap<String, String> {
     let mut flags_with_args = HashMap::new();
     let mut current_flag = String::new();
     let mut is_long_string = false;
