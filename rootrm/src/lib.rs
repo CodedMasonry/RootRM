@@ -4,17 +4,17 @@ pub mod modules;
 use lazy_static::lazy_static;
 use parking_lot::Mutex;
 use async_trait::async_trait;
+use anyhow::Result;
 use std::{collections::HashMap, str::SplitWhitespace, sync::Arc};
 
 use crate::modules as modules_folder;
-use std::error::Error;
 use thiserror::Error;
 
 /// Basic error handling for root module handling
 #[derive(Error, Debug)]
 pub enum ModuleError {
-    #[error("Doesn't Exist")]
-    Invalid,
+    #[error("Command Doesn't Exist")]
+    NonExistant,
 }
 
 /// Command is the default template for command modules
@@ -23,7 +23,7 @@ pub enum ModuleError {
 /// name fn is simply for indexing purposes (should return name of command)
 #[async_trait]
 pub trait Command: Send + Sync {
-    async fn run(&self, args: SplitWhitespace<'_>) -> Result<(), Box<dyn Error>>;
+    async fn run(&self, args: SplitWhitespace<'_>) -> Result<()>;
     fn help(&self);
     fn name(&self) -> String;
 }
@@ -31,6 +31,7 @@ pub trait Command: Send + Sync {
 // Static items that are can be compiled
 lazy_static! {
     /// List of commands supported
+    /// Append module additions to this set
     static ref COMMANDS_SET: Arc<Mutex<Vec<Box<dyn Command + Send + Sync>>>> = {
         let mut temp_set: Vec<Box<dyn Command + Send + Sync>> = vec![];
 
@@ -49,18 +50,19 @@ lazy_static! {
     };
 }
 
-/// Intended for CLI
-pub async fn run_command(command: &str, args: SplitWhitespace<'_>) -> Result<(), Box<dyn Error>> {
+/// Intended for CLI; attempts to run cmd
+pub async fn run_command(command: &str, args: SplitWhitespace<'_>) -> Result<()> {
     let cmd_guard = COMMANDS_SET.lock();
     if let Some(cmd) = cmd_guard.iter().find(|&cmd| cmd.name() == command) {
         return cmd.run(args).await;
     }
 
     // Hits if no commands are it
-    return Err(ModuleError::Invalid.into());
+    return Err(ModuleError::NonExistant.into());
 }
 
 /// Handles parsing flags in a SplitWhitespace item
+/// I know it isn't clean but it works
 async fn parse_flags(input: SplitWhitespace<'_>) -> HashMap<String, String> {
     let mut flags_with_args = HashMap::new();
     let mut current_flag = String::new();

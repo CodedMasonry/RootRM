@@ -1,3 +1,5 @@
+///# Append added modules here (else they just won't work)
+
 /// Module for Debug purposes
 pub mod misc;
 pub mod handlers;
